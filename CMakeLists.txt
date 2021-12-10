@@ -15,4 +15,6 @@ fcpp_target(./run/spreading_collection_batch.cpp    OFF)
 fcpp_target(./run/spreading_collection_gui.cpp      ON)
 fcpp_target(./run/spreading_collection_run.cpp      OFF)
 
+fcpp_target(./run/stationary_cluster.cpp      ON)
+
 fcpp_test(./test/tester.cpp)
