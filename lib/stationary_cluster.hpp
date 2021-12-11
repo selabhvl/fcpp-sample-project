@@ -1,14 +1,15 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2021 Giorgio Audrito & Volker Stolz. All Rights Reserved.
 
 /**
  * @file spreading_collection.hpp
  * @brief Simple composition of spreading and collection functions.
  *
  * This header file is designed to work under multiple execution paradigms.
+ * Contributions by Quentin James.
  */
 
-#ifndef FCPP_SPREADING_COLLECTION_H_
-#define FCPP_SPREADING_COLLECTION_H_
+#ifndef FCPP_STATIONARY_CLUSTER_H_
+#define FCPP_STATIONARY_CLUSTER_H_
 
 
 #include "lib/fcpp.hpp"
@@ -103,18 +104,10 @@ FUN void change_colour(ARGS, int h, int s, int v) {
 
 //! @brief Function selecting a source based on the current time
 FUN bool select_source(ARGS, int step) { CODE
-    // the source ID increases by 1 every "step" seconds
-    device_t source_id = ((int)node.current_time()) / step;
-    bool is_source = node.uid == source_id;
-    // retrieves from the net object the current true position of the source
-    vec<3> source_pos = node.position();
-    if (node.net.node_count(source_id))
-        source_pos = node.net.node_at(source_id).position(node.current_time());
     // store relevant values in the node storage
-    node.storage(tags::true_distance{})     = distance(node.position(), source_pos);
-    node.storage(tags::node_size{})         = is_source ? 20 : 10;
-    node.storage(tags::node_shape{})        = is_source ? shape::star : shape::sphere;
-    return is_source;
+    node.storage(tags::node_size{})         = 10;
+    node.storage(tags::node_shape{})        = node.uid == 0 ? shape::star : shape::sphere;
+    return true;
 }
 //! @brief Export types used by the select_source function (none).
 FUN_EXPORT select_source_t = common::export_list<>;
@@ -160,25 +153,6 @@ MAIN() {
     // selects a different source every 50 simulated seconds
     bool is_source = select_source(CALL, 50);
     // calculate distances from the source
-    double dist = abf_distance(CALL, is_source);
-    // collect the maximum finite distance (diameter) back towards the source
-    double sdiam = mp_collection(CALL, dist, dist, 0.0, [](double x, double y){
-        x = isfinite(x) ? x : 0;
-        y = isfinite(y) ? y : 0;
-        return max(x, y);
-    }, [](double x, int){
-        return x;
-    });
-    // broadcast the diameter computed in the source to the whole network
-    double diam = broadcast(CALL, dist, sdiam);
-    // store relevant values in the node storage
-    node.storage(tags::calc_distance{})     = dist;
-    node.storage(tags::source_diameter{})   = sdiam;
-    node.storage(tags::diameter{})          = diam;
-    // hardcode all nodes' colors to red
-    node.storage(tags::distance_c{})        = color::hsva(1, 1, 1);
-    node.storage(tags::diameter_c{})        = color::hsva(1, 1, 1);
-    node.storage(tags::source_diameter_c{}) = color::hsva(1, 1, 1);
 
 }
 
@@ -292,8 +266,6 @@ DECLARE_OPTIONS(list,
     area<0, 0, canvas_width, canvas_height>
 );
 
-//TODO: snowflake start position (x,y,z)
-
 
 } // namespace option
 
@@ -301,4 +273,4 @@ DECLARE_OPTIONS(list,
 } // namespace fcpp
 
 
-#endif // FCPP_SPREADING_COLLECTION_H_
+#endif // FCPP_STATIONARY_CLUSTER_H_
