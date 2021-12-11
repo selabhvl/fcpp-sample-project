@@ -190,34 +190,35 @@ using store_t = tuple_store<
 >;
 //! @brief The tags and corresponding aggregators to be logged.
 using aggregator_t = aggregators<
-  /*
-    diameter,           aggregator::combine<
+    neighbours,           aggregator::combine<
                             aggregator::min<double>,
                             aggregator::mean<double>,
                             aggregator::max<double>
                         >
-  */
 >;
-  /*
+
 //! @brief The aggregator to be used on logging rows for plotting.
 using row_aggregator_t = common::type_sequence<aggregator::mean<double>>;
 //! @brief The logged values to be shown in plots as lines (true_distance, diameter).
-using points_t = plot::values<aggregator_t, row_aggregator_t, true_distance, diameter>;
+using points_t = plot::values<aggregator_t, row_aggregator_t, neighbours>;
 //! @brief A plot of the logged values by time for speed = 50 (intermediate speed).
+// TODO: comm/4 comming from file in run/? How to extract?
+// TODO: Only plot values for particular uid.
 using time_plot_t = plot::split<plot::time, plot::filter<speed, filter::equal<comm/4>, points_t>>;
+  //using plot_t = time_plot_t;
 //! @brief A plot of the logged values by speed for times >= 50 (after the first source switch).
-using speed_plot_t = plot::split<speed, plot::filter<plot::time, filter::above<50>, points_t>>;
+using speed_plot_t = plot::split<speed, plot::filter<plot::time, filter::above<5>, points_t>>;
+//using speed_plot_t = plot::split<speed, plot::filter<plot::time, filter::above<5>, points_t>>;
 //! @brief Combining the two plots into a single row.
-using plot_t = plot::join<time_plot_t, speed_plot_t>;
-  */
+  using plot_t = plot::join<time_plot_t, speed_plot_t>; // XXX NOP?
+
 
 template <size_t sx, size_t sy, size_t vx, size_t vy> 
 DECLARE_OPTIONS(snowflake, 
                 spawn_schedule<sequence::multiple_n<1, 0>>, 
                 init<
 		// TODO: x, v?
-                    x, distribution::rect_n<1, sx, sy, 0, sx, sy, 0>, 
-                    // speed,  distribution::constant_i<double, speed>>,
+                    x, distribution::rect_n<1, sx, sy, 0, sx, sy, 0>,
                     v, distribution::rect_n<1, vx, vy, 0, vx, vy, 0>
                 >
                 );
@@ -240,10 +241,11 @@ DECLARE_OPTIONS(list,
     log_schedule<log_s>,     // the sequence generator for log events on the network
     store_t,       // the contents of the node storage
     aggregator_t,  // the tags and corresponding aggregators to be logged
-    snowflake<0, 0, 20, 20>,
+    snowflake<0, 0, 10, 10>, // speed = size/scale of v-component
     cluster<devices, 35, 35, 65, 65>,
     extra_info<speed, double>, // use the globally provided speed for plotting
-		// plot_type<plot_t>,         // the plot description to be used
+    // XXX NOP?
+    plot_type<plot_t>,         // the plot description to be used
     dimension<dim>, // dimensionality of the space
     connector<connect::fixed<comm, 1, dim>>, // connection allowed within a fixed comm range
     shape_tag<node_shape>, // the shape of a node is read from this tag in the store
