@@ -69,20 +69,8 @@ namespace coordination {
 namespace tags {
     //! @brief The device movement speed.
     struct speed {};
-    //! @brief True distance of the current node from the source.
-    struct true_distance {};
-    //! @brief Computed distance of the current node from the source.
-    struct calc_distance {};
-    //! @brief Diameter of the network (in the source).
-    struct source_diameter {};
-    //! @brief Diameter of the network (in every node).
-    struct diameter {};
-    //! @brief Color representing the distance of the current node.
-    struct distance_c {};
-    //! @brief Color representing the diameter of the network (in the source).
-    struct source_diameter_c {};
     //! @brief Color representing the diameter of the network (in every node).
-    struct diameter_c {};
+    struct alarm_c {};
     //! @brief Size of the current node.
     struct node_size {};
     //! @brief Shape of the current node.
@@ -97,9 +85,9 @@ namespace tags {
 
 //! @brief Function to change node colour
 FUN void change_colour(ARGS, int h, int s, int v) {
-    node.storage(tags::diameter_c{})        = color::hsva(h, s, v);
-    node.storage(tags::distance_c{})        = color::hsva(h, s, v);
-    node.storage(tags::source_diameter_c{}) = color::hsva(h, s, v);
+    node.storage(tags::alarm_c{})        = color::hsva(h, s, v);
+    //    node.storage(tags::distance_c{})        = color::hsva(h, s, v);
+    //    node.storage(tags::source_diameter_c{}) = color::hsva(h, s, v);
 }      
 
 //! @brief Function selecting a source based on the current time
@@ -193,13 +181,7 @@ using speed_d = distribution::constant_i<double, speed>;
 //! @brief The contents of the node storage as tags and associated types.
 using store_t = tuple_store<
     speed,              double,
-    true_distance,      double,
-    calc_distance,      double,
-    source_diameter,    double,
-    diameter,           double,
-    distance_c,         color,
-    source_diameter_c,  color,
-    diameter_c,         color,
+    alarm_c,         color,
     node_shape,         shape,
     node_size,          double,
     neighbours,         int,
@@ -208,13 +190,15 @@ using store_t = tuple_store<
 >;
 //! @brief The tags and corresponding aggregators to be logged.
 using aggregator_t = aggregators<
-    true_distance,      aggregator::max<double>,
+  /*
     diameter,           aggregator::combine<
                             aggregator::min<double>,
                             aggregator::mean<double>,
                             aggregator::max<double>
                         >
+  */
 >;
+  /*
 //! @brief The aggregator to be used on logging rows for plotting.
 using row_aggregator_t = common::type_sequence<aggregator::mean<double>>;
 //! @brief The logged values to be shown in plots as lines (true_distance, diameter).
@@ -225,7 +209,8 @@ using time_plot_t = plot::split<plot::time, plot::filter<speed, filter::equal<co
 using speed_plot_t = plot::split<speed, plot::filter<plot::time, filter::above<50>, points_t>>;
 //! @brief Combining the two plots into a single row.
 using plot_t = plot::join<time_plot_t, speed_plot_t>;
-
+  */
+  
 template <size_t sx, size_t sy, size_t vx, size_t vy> 
 DECLARE_OPTIONS(snowflake, 
                 spawn_schedule<sequence::multiple_n<1, 0>>, 
@@ -257,12 +242,12 @@ DECLARE_OPTIONS(list,
 	snowflake<0, 0, 20, 20>,
     cluster<devices, 35, 35, 65, 65>,
     extra_info<speed, double>, // use the globally provided speed for plotting
-    plot_type<plot_t>,         // the plot description to be used
+		// plot_type<plot_t>,         // the plot description to be used
     dimension<dim>, // dimensionality of the space
     connector<connect::fixed<comm, 1, dim>>, // connection allowed within a fixed comm range
     shape_tag<node_shape>, // the shape of a node is read from this tag in the store
     size_tag<node_size>,   // the size of a node is read from this tag in the store
-    color_tag<distance_c, source_diameter_c, diameter_c>, // colors of a node are read from these
+    color_tag<alarm_c>, // colors of a node are read from these
     area<0, 0, canvas_width, canvas_height>
 );
 
