@@ -18,17 +18,14 @@
 using namespace std;
 
 
-
 /**
  * @brief Namespace containing all the objects in the FCPP library.
  */
 namespace fcpp {
 
 // bool operator<(vec<2>, vec<2>) {
-//     return true;
+//   return true;
 // }
-
-// template <size_t n, size_t cx, size_t cy> DECLARE_OPTIONS(cluster, spawn_schedule<sequence::multiple_n<n, 0>>, init<...>);
 
 
 //! @brief Minimum number whose square is at least n.
@@ -60,7 +57,6 @@ constexpr int canvas_width = 100;
 constexpr int canvas_height = 100;
 
 
-
 //! @brief Namespace containing the libraries of coordination routines.
 namespace coordination {
 
@@ -86,17 +82,8 @@ namespace tags {
 //! @brief Function to change node colour
 FUN void change_colour(ARGS, int h, int s, int v) {
     node.storage(tags::alarm_c{})        = color::hsva(h, s, v);
-    //    node.storage(tags::distance_c{})        = color::hsva(h, s, v);
-    //    node.storage(tags::source_diameter_c{}) = color::hsva(h, s, v);
 }      
 
-//! @brief Function selecting a source based on the current time
-FUN bool select_source(ARGS, int step) { CODE
-    // store relevant values in the node storage
-    node.storage(tags::node_size{})         = 10;
-    node.storage(tags::node_shape{})        = node.uid == 0 ? shape::star : shape::sphere;
-    return true;
-}
 //! @brief Export types used by the select_source function (none).
 FUN_EXPORT select_source_t = common::export_list<>;
 
@@ -116,11 +103,15 @@ real_t period = 1;
 // if snowflake has neighbors in cluster, ID the closest one and check if dist < some d
 
 
-
 //! @brief Main function.
 MAIN() {
 
+  // TODO: do only ONCE
+    node.storage(tags::node_size{})         = 10;
+    node.storage(tags::node_shape{})        = node.uid == 0 ? shape::star : shape::sphere;
+
     if (node.uid != 0) {
+      // TODO: do only ONCE
         rectangle_walk(CALL, make_vec(35, 35, 0), make_vec(65, 65, 0), node.storage(tags::speed{}), 1);
     }
 
@@ -129,6 +120,24 @@ MAIN() {
     //     follow_path(CALL, path, r2, period);
     // }
 
+    int nbr = count_hood(CALL);
+    node.storage(tags::neighbours{}) = nbr;
+    // Node has 1 or 0 neighbours, colour it green
+    if (nbr <= 3) {
+        change_colour(CALL, 108, 1, 1);
+    }
+    // Node has 2 or 3 neighbor nodes, colour it yellow
+    else if ((4 <= nbr) && (nbr <= 7)) {
+        change_colour(CALL, 47, 1, 1);
+    }
+    // Node has 4 - 7 neighbours, colour it red
+    else if (nbr > 7) {
+        change_colour(CALL, 0, 1, 1);
+    } else {
+      assert(false);
+    }
+
+
     // field<bool> nbr_cluster = nbr(CALL, node.storage(tags::cluster{}));
     // field<real_t> cluster_distances = mux(nbr_cluster, node.nbr_dist(), INF);
     // tuple<real_t vec<2>> min_val_pos = min_hood(CALL, tuple(cluster_distances, node.nbr_vec()));
@@ -136,12 +145,6 @@ MAIN() {
 
     // if (node.storage(tags::alarm{})) {
     // }
-
-
-    // selects a different source every 50 simulated seconds
-    bool is_source = select_source(CALL, 50);
-    // calculate distances from the source
-
 }
 
 //! @brief Export types used by the main function.
@@ -169,9 +172,6 @@ using round_s = sequence::periodic<
 >;
 //! @brief The sequence of network snapshots (one every simulated second).
 using log_s = sequence::periodic_n<1, 0, 1, end_time>;
-//! @brief The sequence of node generation events (multiple devices all generated at time 0).
-using spawn_s1 = sequence::multiple_n<devices, 0>;
-using spawn_s2 = sequence::multiple_n<devices, 0>;
 //! @brief The distribution of initial node positions (random in a given rectangle).
 using rectangle_d1 = distribution::rect_n<1, 0, 0, 0, side, side, height>;
 //! @brief The distribution of initial node positions (random in a given rectangle).
@@ -181,7 +181,7 @@ using speed_d = distribution::constant_i<double, speed>;
 //! @brief The contents of the node storage as tags and associated types.
 using store_t = tuple_store<
     speed,              double,
-    alarm_c,         color,
+    alarm_c,            color,
     node_shape,         shape,
     node_size,          double,
     neighbours,         int,
@@ -210,11 +210,12 @@ using speed_plot_t = plot::split<speed, plot::filter<plot::time, filter::above<5
 //! @brief Combining the two plots into a single row.
 using plot_t = plot::join<time_plot_t, speed_plot_t>;
   */
-  
+
 template <size_t sx, size_t sy, size_t vx, size_t vy> 
 DECLARE_OPTIONS(snowflake, 
                 spawn_schedule<sequence::multiple_n<1, 0>>, 
-                init<   
+                init<
+		// TODO: x, v?
                     x, distribution::rect_n<1, sx, sy, 0, sx, sy, 0>, 
                     // speed,  distribution::constant_i<double, speed>>,
                     v, distribution::rect_n<1, vx, vy, 0, vx, vy, 0>
@@ -239,7 +240,7 @@ DECLARE_OPTIONS(list,
     log_schedule<log_s>,     // the sequence generator for log events on the network
     store_t,       // the contents of the node storage
     aggregator_t,  // the tags and corresponding aggregators to be logged
-	snowflake<0, 0, 20, 20>,
+    snowflake<0, 0, 20, 20>,
     cluster<devices, 35, 35, 65, 65>,
     extra_info<speed, double>, // use the globally provided speed for plotting
 		// plot_type<plot_t>,         // the plot description to be used
